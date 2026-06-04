@@ -3,7 +3,7 @@
 # Autores:
 
     Arthur Albara Lovera - RA: 1139243
-    Arthur Tapparo Silvani - RA: 
+    Arthur Tapparo Silvani - RA: 1139247 
 
 
 ##  História do Jogo

@@ -14,7 +14,7 @@ while True:
     else:
         print("Nome Inválido!")
        
-tamanho = (800,200)
+tamanho = (1000,700)
 pygame.display.set_caption("Iron Man do Marcão")
 icone  = pygame.image.load("bases/icone.png")
 pygame.display.set_icon(icone)
@@ -56,21 +56,21 @@ def jogar():
             if evento.type == pygame.QUIT:
                 quit()
                 movimentoXPersona = 0
-            elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_UP:
+            elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_w:
                 movimentoYPersona = -velocidadeMovPersona
-            elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_DOWN:
+            elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_s:
                 movimentoYPersona = velocidadeMovPersona
-            elif evento.type == pygame.KEYUP and evento.key == pygame.K_UP:
+            elif evento.type == pygame.KEYUP and evento.key == pygame.K_w:
                 movimentoYPersona = 0
-            elif evento.type == pygame.KEYUP and evento.key == pygame.K_DOWN:
+            elif evento.type == pygame.KEYUP and evento.key == pygame.K_s:
                 movimentoYPersona = 0
-            elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_RIGHT:
+            elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_d:
                 movimentoXPersona = velocidadeMovPersona
-            elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_LEFT:
+            elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_a:
                 movimentoXPersona = -velocidadeMovPersona
-            elif evento.type == pygame.KEYUP and evento.key == pygame.K_RIGHT:
+            elif evento.type == pygame.KEYUP and evento.key == pygame.K_d:
                 movimentoXPersona = 0
-            elif evento.type == pygame.KEYUP and evento.key == pygame.K_LEFT:
+            elif evento.type == pygame.KEYUP and evento.key == pygame.K_a:
                 movimentoXPersona = 0
                 
         
@@ -180,8 +180,7 @@ def dead():
 def start():
     larguraButtonStart = 150
     alturaButtonStart  = 40
-    larguraButtonQuit = 150
-    alturaButtonQuit  = 40
+
     while True:
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
@@ -190,9 +189,6 @@ def start():
                 if startButton.collidepoint(evento.pos):
                     larguraButtonStart = 140
                     alturaButtonStart  = 35
-                if quitButton.collidepoint(evento.pos):
-                    larguraButtonQuit = 140
-                    alturaButtonQuit  = 35
 
                 
             elif evento.type == pygame.MOUSEBUTTONUP:
@@ -202,11 +198,6 @@ def start():
                     larguraButtonStart = 150
                     alturaButtonStart  = 40
                     jogar()
-                if quitButton.collidepoint(evento.pos):
-                    #pygame.mixer.music.play(-1)
-                    larguraButtonQuit = 150
-                    alturaButtonQuit  = 40
-                    quit()
             
         tela.fill(branco)
         tela.blit(fundoStart, (0,0))
@@ -214,9 +205,6 @@ def start():
         startTexto = fonteMenu.render("Iniciar Game", True, preto)
         tela.blit(startTexto, (25,12))
         
-        quitButton = pygame.draw.rect(tela, branco, (10,60, larguraButtonQuit, alturaButtonQuit), border_radius=15)
-        quitTexto = fonteMenu.render("Sair do Game", True, preto)
-        tela.blit(quitTexto, (25,62))
         texto = fonteMenu.render(f"The Best - {nome_maior} - {maior_pontos} - { dataJogada} ", True, branco)
         tela.blit(texto, (480,15))
         
