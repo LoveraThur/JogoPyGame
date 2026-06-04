@@ -174,7 +174,7 @@ def dead():
 
         pygame.display.update()
         relogio.tick(60)
-        
+
 def start():
     larguraButtonStart = 150
     alturaButtonStart  = 40
@@ -187,8 +187,6 @@ def start():
                 if startButton.collidepoint(evento.pos):
                     larguraButtonStart = 140
                     alturaButtonStart  = 35
-
-                
             elif evento.type == pygame.MOUSEBUTTONUP:
                 # Verifica se o clique foi dentro do retângulo
                 if startButton.collidepoint(evento.pos):
