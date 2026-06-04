@@ -174,9 +174,7 @@ def dead():
 
         pygame.display.update()
         relogio.tick(60)
-
-
-
+        
 def start():
     larguraButtonStart = 150
     alturaButtonStart  = 40
