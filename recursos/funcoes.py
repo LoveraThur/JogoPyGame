@@ -2,6 +2,9 @@ import os, time
 import json
 from datetime import datetime
 
+# Item 17: arquivo de log/banco chamado log.dat
+ARQUIVO_LOG = "log.dat"
+
 def limpar_tela():
     os.system("cls")
 
@@ -11,16 +14,22 @@ def aguarde(segundos):
 def inicializarBancoDeDados():
     # r - read, w - write, a - append
     try:
-        banco = open("base.atitus","r")
+        banco = open(ARQUIVO_LOG, "r")
+        banco.close()
     except:
         print("Banco de Dados Inexistente. Criando...")
-        banco = open("base.atitus","w")
+        banco = open(ARQUIVO_LOG, "w")
+        banco.close()
 
 def escreverDados(nome, pontos):
     # INI - inserindo no arquivo
-    banco = open("base.atitus","r")
-    dados = banco.read()
-    banco.close()
+    try:
+        banco = open(ARQUIVO_LOG, "r")
+        dados = banco.read()
+        banco.close()
+    except:
+        dados = ""
+
     if dados != "":
         dadosDict = json.loads(dados)
     else:
@@ -30,15 +39,19 @@ def escreverDados(nome, pontos):
     hora_br = datetime.now().strftime("%H:%M:%S")
     dadosDict[nome] = (pontos, data_br, hora_br)
 
-    banco = open("base.atitus","w")
+    banco = open(ARQUIVO_LOG, "w")
     banco.write(json.dumps(dadosDict))
     banco.close()
     # END - inserindo no arquivo
 
 def maior_pontuador():
-    banco = open("base.atitus","r")
-    dados = banco.read()
-    banco.close()
+    try:
+        banco = open(ARQUIVO_LOG, "r")
+        dados = banco.read()
+        banco.close()
+    except:
+        dados = ""
+
     if dados != "":
         dadosDict = json.loads(dados)
     else:

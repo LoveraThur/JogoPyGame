@@ -1,6 +1,33 @@
 import pygame
 import random
+import math
+import threading
 from recursos.funcoes import inicializarBancoDeDados, limpar_tela, escreverDados, maior_pontuador
+
+# Item 19: pyttsx3 para narração de voz
+try:
+    import pyttsx3
+    _tts_engine = pyttsx3.init()
+    _tts_engine.setProperty("rate", 160)
+    TTS_DISPONIVEL = True
+except Exception:
+    TTS_DISPONIVEL = False
+
+def falar(texto):
+    """Fala o texto em uma thread separada para não travar o jogo."""
+    if not TTS_DISPONIVEL:
+        return
+    def _run():
+        try:
+            engine = pyttsx3.init()
+            engine.setProperty("rate", 160)
+            engine.say(texto)
+            engine.runAndWait()
+        except Exception:
+            pass
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+
 
 limpar_tela()
 inicializarBancoDeDados()
@@ -9,7 +36,7 @@ nome_maior, maior_pontos, dataJogada = maior_pontuador()
 pygame.init()
 
 while True:
-    nome = input("Informe o Nome do Competidor:")
+    nome = input("Informe o Nome do Competidor: ")
     if len(nome) > 0:
         break
     else:
@@ -25,6 +52,7 @@ branco = (255, 255, 255)
 preto = (0, 0, 0)
 amarelo = (255, 220, 0)
 vermelho = (200, 0, 0)
+laranja = (255, 165, 0)
 
 fundo = pygame.image.load("bases/end.png")
 fundoDead = pygame.image.load("bases/backgroundMorte.png")
@@ -41,8 +69,47 @@ fonteMenu = pygame.font.SysFont("comicsans", 18)
 fontePausa = pygame.font.SysFont("comicsans", 72, bold=True)
 fonteGrande = pygame.font.SysFont("comicsans", 24, bold=True)
 
+# Item 16: variáveis para o sol pulsante
+_sol_tick = 0
+_SOL_RAIO_BASE = 38
+_SOL_RAIO_DELTA = 10   # quanto o raio varia
+_SOL_X = 950           # canto superior direito
+_SOL_Y = 50
+_SOL_VELOCIDADE = 0.04  # velocidade da pulsação
+
+
+def desenhar_sol(superficie, tick):
+    """
+    Item 16: desenha um sol amarelo pulsante (aumenta e diminui de raio)
+    com raios ao redor, no canto superior direito da tela.
+    """
+    raio = int(_SOL_RAIO_BASE + _SOL_RAIO_DELTA * math.sin(tick))
+    # Brilho externo (halo suave)
+    halo_surf = pygame.Surface(((_SOL_RAIO_BASE + _SOL_RAIO_DELTA + 18) * 2,
+                                 (_SOL_RAIO_BASE + _SOL_RAIO_DELTA + 18) * 2), pygame.SRCALPHA)
+    halo_r = raio + 14
+    pygame.draw.circle(halo_surf, (255, 220, 0, 60),
+                       (halo_surf.get_width() // 2, halo_surf.get_height() // 2), halo_r)
+    superficie.blit(halo_surf,
+                    (_SOL_X - halo_surf.get_width() // 2,
+                     _SOL_Y - halo_surf.get_height() // 2))
+    # Raios do sol
+    num_raios = 10
+    comprimento_raio = raio + 16
+    for i in range(num_raios):
+        angulo = (2 * math.pi / num_raios) * i + tick * 0.5
+        x1 = _SOL_X + int((raio + 4) * math.cos(angulo))
+        y1 = _SOL_Y + int((raio + 4) * math.sin(angulo))
+        x2 = _SOL_X + int(comprimento_raio * math.cos(angulo))
+        y2 = _SOL_Y + int(comprimento_raio * math.sin(angulo))
+        pygame.draw.line(superficie, (255, 200, 0), (x1, y1), (x2, y2), 3)
+    # Círculo principal do sol
+    pygame.draw.circle(superficie, amarelo, (_SOL_X, _SOL_Y), raio)
+    pygame.draw.circle(superficie, laranja, (_SOL_X, _SOL_Y), raio, 3)
+
 
 def jogar():
+    global _sol_tick
     fundoMov1 = 0
     fundoMov2 = 1129
     posicaoXPersona = 50
@@ -61,9 +128,11 @@ def jogar():
     while True:
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
+                pygame.quit()
                 quit()
-            # ESC fecha o jogo (item 20)
+            # Item 20: ESC fecha o jogo completamente
             elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
+                pygame.quit()
                 quit()
             # Pausa com Espaço (item 11)
             elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_SPACE:
@@ -85,7 +154,6 @@ def jogar():
                 movimentoYPersona = 0
 
         if pausado:
-            # Exibe PAUSE no centro (item 11)
             texto_pausa = fontePausa.render("PAUSE", True, amarelo)
             rect_pausa = texto_pausa.get_rect(center=(500, 350))
             tela.blit(texto_pausa, rect_pausa)
@@ -123,9 +191,13 @@ def jogar():
         texto = fonteMenu.render("Pontos: " + str(pontos), True, branco)
         tela.blit(texto, (700, 15))
 
-        # Dica de pausa discreta (item 12)
+        # Dica de pausa discreta
         dica_pausa = fonteMenu.render("Press Space to Pause Game", True, (200, 200, 200))
         tela.blit(dica_pausa, (10, 670))
+
+        # Item 16: sol pulsante no canto superior direito
+        _sol_tick += _SOL_VELOCIDADE
+        desenhar_sol(tela, _sol_tick)
 
         pixelsPersonaX = list(range(posicaoXPersona, posicaoXPersona + 210))
         pixelsPersonaY = list(range(posicaoYPersona, posicaoYPersona + 120))
@@ -146,10 +218,14 @@ def jogar():
 
 
 def dead(pontos_jogador):
+    global _sol_tick
     pygame.mixer.music.stop()
     pygame.mixer.Sound.play(explosaoSound)
 
-    # Busca o maior pontuador atualizado (item 18)
+    # Item 19: fala a pontuação ao morrer
+    falar(f"Game over! Você fez {pontos_jogador} pontos.")
+
+    # Busca o maior pontuador atualizado
     nome_top, pts_top, data_top = maior_pontuador()
 
     larguraButtonStart = 150
@@ -158,8 +234,11 @@ def dead(pontos_jogador):
     while True:
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
+                pygame.quit()
                 quit()
+            # Item 20: ESC fecha o jogo completamente
             elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
+                pygame.quit()
                 quit()
             elif evento.type == pygame.MOUSEBUTTONDOWN:
                 if startButton.collidepoint(evento.pos):
@@ -184,26 +263,36 @@ def dead(pontos_jogador):
         rect_pontos = txt_pontos.get_rect(topright=(990, 45))
         tela.blit(txt_pontos, rect_pontos)
 
-        # Maior pontuador (item 18)
+        # Maior pontuador
         if nome_top:
             txt_top = fonteGrande.render(f"Recorde: {nome_top} - {pts_top} pts - {data_top}", True, amarelo)
             rect_top = txt_top.get_rect(topright=(990, 15))
             tela.blit(txt_top, rect_top)
+
+        # Item 16: sol pulsante na tela de morte também
+        _sol_tick += _SOL_VELOCIDADE
+        desenhar_sol(tela, _sol_tick)
 
         pygame.display.update()
         relogio.tick(60)
 
 
 def boasVindas():
-    # Tela de boas-vindas (item 9)
+    global _sol_tick
     larguraBtn = 200
     alturaBtn = 50
+
+    # Item 19: fala boas-vindas ao jogador ao entrar na tela inicial
+    falar(f"Bem-vindo, {nome}! Prepare-se para jogar.")
 
     while True:
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
+                pygame.quit()
                 quit()
+            # Item 20: ESC fecha o jogo completamente
             elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
+                pygame.quit()
                 quit()
             elif evento.type == pygame.MOUSEBUTTONDOWN:
                 if btnIniciar.collidepoint(evento.pos):
@@ -258,6 +347,10 @@ def boasVindas():
         txt_btn = fonteGrande.render("INICIAR PARTIDA", True, preto)
         rect_btn = txt_btn.get_rect(center=btnIniciar.center)
         tela.blit(txt_btn, rect_btn)
+
+        # Item 16: sol pulsante no canto superior direito da tela de boas-vindas
+        _sol_tick += _SOL_VELOCIDADE
+        desenhar_sol(tela, _sol_tick)
 
         pygame.display.update()
         relogio.tick(60)
