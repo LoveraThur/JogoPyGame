@@ -1,32 +1,19 @@
 import pygame
 import random
-import math
 import threading
 from recursos.funcoes import inicializarBancoDeDados, limpar_tela, escreverDados, maior_pontuador
 
-try:
-    import pyttsx3
-    _tts_engine = pyttsx3.init()
-    _tts_engine.setProperty("rate", 160)
-    TTS_DISPONIVEL = True
-except Exception:
-    TTS_DISPONIVEL = False
+import pyttsx3
 
 def falar(texto):
-    """Fala o texto em uma thread separada para não travar o jogo."""
-    if not TTS_DISPONIVEL:
-        return
     def _run():
-        try:
-            engine = pyttsx3.init()
-            engine.setProperty("rate", 160)
-            engine.say(texto)
-            engine.runAndWait()
-        except Exception:
-            pass
-    t = threading.Thread(target=_run, daemon=True)
-    t.start()
-
+        pygame.mixer.stop()
+        pygame.mixer.music.stop()
+        engine = pyttsx3.init()
+        engine.setProperty("rate", 150)
+        engine.say(texto)
+        engine.runAndWait()
+    threading.Thread(target=_run, daemon=True).start()
 
 limpar_tela()
 inicializarBancoDeDados()
@@ -35,7 +22,7 @@ nome_maior, maior_pontos, dataJogada = maior_pontuador()
 pygame.init()
 
 while True:
-    nome = input("Informe o Nome do Competidor: ")
+    nome = input("Informe o Nome do Competidor:")
     if len(nome) > 0:
         break
     else:
@@ -61,56 +48,79 @@ iron = pygame.image.load("bases/steveElytra.png")
 iron = pygame.transform.scale(iron, (210, 120))
 missel = pygame.image.load("bases/bafoDragao.png")
 missel = pygame.transform.scale(missel, (80, 80))
-missileSound = pygame.mixer.Sound("bases/gast.mp3")
-explosaoSound = pygame.mixer.Sound("bases/fogo.mp3")
+enderman = pygame.image.load("bases/enderman.png")
+missileSound = pygame.mixer.Sound("bases/enderDragon.wav")
+explosaoSound = pygame.mixer.Sound("bases/explosao.wav")
 pygame.mixer.music.load("bases/musicend.mp3")
 fonteMenu = pygame.font.SysFont("comicsans", 18)
 fontePausa = pygame.font.SysFont("comicsans", 72, bold=True)
 fonteGrande = pygame.font.SysFont("comicsans", 24, bold=True)
 
-# Item 16: variáveis para o sol pulsante
-_sol_tick = 0
+# 
+_SENO = [
+     0.000,  0.105,  0.208,  0.309,  0.407,  0.500,  0.588,  0.669,
+     0.743,  0.809,  0.866,  0.914,  0.951,  0.978,  0.995,  1.000,
+     0.995,  0.978,  0.951,  0.914,  0.866,  0.809,  0.743,  0.669,
+     0.588,  0.500,  0.407,  0.309,  0.208,  0.105,  0.000, -0.105,
+    -0.208, -0.309, -0.407, -0.500, -0.588, -0.669, -0.743, -0.809,
+    -0.866, -0.914, -0.951, -0.978, -0.995, -1.000, -0.995, -0.978,
+    -0.951, -0.914, -0.866, -0.809, -0.743, -0.669, -0.588, -0.500,
+    -0.407, -0.309, -0.208, -0.105
+]
+_COSSENO = [
+     1.000,  0.995,  0.978,  0.951,  0.914,  0.866,  0.809,  0.743,
+     0.669,  0.588,  0.500,  0.407,  0.309,  0.208,  0.105,  0.000,
+    -0.105, -0.208, -0.309, -0.407, -0.500, -0.588, -0.669, -0.743,
+    -0.809, -0.866, -0.914, -0.951, -0.978, -0.995, -1.000, -0.995,
+    -0.978, -0.951, -0.914, -0.866, -0.809, -0.743, -0.669, -0.588,
+    -0.500, -0.407, -0.309, -0.208, -0.105,  0.000,  0.105,  0.208,
+     0.309,  0.407,  0.500,  0.588,  0.669,  0.743,  0.809,  0.866,
+     0.914,  0.951,  0.978,  0.995
+]
+_N = len(_SENO)  # 60
+
+# Estado do sol pulsante
+_sol_frame = 0
 _SOL_RAIO_BASE = 38
-_SOL_RAIO_DELTA = 10   # quanto o raio varia
-_SOL_X = 950           # canto superior direito
+_SOL_RAIO_DELTA = 10
+_SOL_X = 950
 _SOL_Y = 50
-_SOL_VELOCIDADE = 0.04  # velocidade da pulsação
 
 
-def desenhar_sol(superficie, tick):
-    """
-    Item 16: desenha um sol amarelo pulsante (aumenta e diminui de raio)
-    com raios ao redor, no canto superior direito da tela.
-    """
-    raio = int(_SOL_RAIO_BASE + _SOL_RAIO_DELTA * math.sin(tick))
-    # Brilho externo (halo suave)
-    halo_surf = pygame.Surface(((_SOL_RAIO_BASE + _SOL_RAIO_DELTA + 18) * 2,
-                                 (_SOL_RAIO_BASE + _SOL_RAIO_DELTA + 18) * 2), pygame.SRCALPHA)
+def desenhar_sol(superficie, frame):
+    """Desenha um sol pulsante no canto superior direito usando tabela pre-calculada."""
+    raio = int(_SOL_RAIO_BASE + _SOL_RAIO_DELTA * _SENO[frame % _N])
+
+    # Halo externo suave
     halo_r = raio + 14
+    halo_tam = (halo_r * 2 + 4, halo_r * 2 + 4)
+    halo_surf = pygame.Surface(halo_tam, pygame.SRCALPHA)
     pygame.draw.circle(halo_surf, (255, 220, 0, 60),
-                       (halo_surf.get_width() // 2, halo_surf.get_height() // 2), halo_r)
-    superficie.blit(halo_surf,
-                    (_SOL_X - halo_surf.get_width() // 2,
-                     _SOL_Y - halo_surf.get_height() // 2))
-    # Raios do sol
+                       (halo_surf.get_width() // 2, halo_surf.get_height() // 2),
+                       halo_r)
+    superficie.blit(halo_surf, (_SOL_X - halo_surf.get_width() // 2,
+                                 _SOL_Y - halo_surf.get_height() // 2))
+
+    # Raios do sol (10 raios, indices distribuidos pela tabela)
     num_raios = 10
     comprimento_raio = raio + 16
     for i in range(num_raios):
-        angulo = (2 * math.pi / num_raios) * i + tick * 0.5
-        x1 = _SOL_X + int((raio + 4) * math.cos(angulo))
-        y1 = _SOL_Y + int((raio + 4) * math.sin(angulo))
-        x2 = _SOL_X + int(comprimento_raio * math.cos(angulo))
-        y2 = _SOL_Y + int(comprimento_raio * math.sin(angulo))
+        idx = (frame + i * (_N // num_raios)) % _N
+        cos_val = _COSSENO[idx]
+        sen_val = _SENO[idx]
+        x1 = _SOL_X + int((raio + 4) * cos_val)
+        y1 = _SOL_Y + int((raio + 4) * sen_val)
+        x2 = _SOL_X + int(comprimento_raio * cos_val)
+        y2 = _SOL_Y + int(comprimento_raio * sen_val)
         pygame.draw.line(superficie, (255, 200, 0), (x1, y1), (x2, y2), 3)
-    # Círculo principal do sol
+
+    # Circulo principal
     pygame.draw.circle(superficie, amarelo, (_SOL_X, _SOL_Y), raio)
     pygame.draw.circle(superficie, laranja, (_SOL_X, _SOL_Y), raio, 3)
 
 
 def jogar():
-    global _sol_tick
-    fundoMov1 = 0
-    fundoMov2 = 1129
+    global _sol_frame
     posicaoXPersona = 50
     posicaoYPersona = 300
     movimentoYPersona = 0
@@ -124,16 +134,29 @@ def jogar():
     pygame.mixer.music.play(-1)
     dificuldade = 20
 
+    # Objetos decorativos (4 endermen) — cada um teleporta a cada 2 segundos
+    obj_x  = random.randint(300, 900)
+    obj_y  = random.randint(500, 620)
+    obj2_x = random.randint(300, 900)
+    obj2_y = random.randint(500, 620)
+    obj3_x = random.randint(300, 900)
+    obj3_y = random.randint(500, 620)
+    obj4_x = random.randint(300, 900)
+    obj4_y = random.randint(500, 620)
+    obj_ultimo_teleporte  = pygame.time.get_ticks()
+    obj2_ultimo_teleporte = pygame.time.get_ticks()
+    obj3_ultimo_teleporte = pygame.time.get_ticks()
+    obj4_ultimo_teleporte = pygame.time.get_ticks()
+    OBJ_INTERVALO = 2000  # 2 segundos em milissegundos
+
     while True:
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
-                pygame.quit()
                 quit()
-            # Item 20: ESC fecha o jogo completamente
+            # ESC fecha o jogo (item 20)
             elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
-                pygame.quit()
                 quit()
-            # Pausa com Espaço (item 11)
+            # Pausa com Espaco (item 11)
             elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_SPACE:
                 pausado = not pausado
                 if pausado:
@@ -142,7 +165,7 @@ def jogar():
                 else:
                     pygame.mixer.music.unpause()
                     pygame.mixer.unpause()
-            # Movimento só em Y (item 13)
+            # Movimento so em Y (item 13)
             elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_w:
                 movimentoYPersona = -velocidadeMovPersona
             elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_s:
@@ -175,14 +198,30 @@ def jogar():
             posicaoYMissel = random.randint(0, 620)
 
         tela.fill(branco)
-        tela.blit(fundo, (fundoMov1, 0))
-        tela.blit(fundo, (fundoMov2, 0))
-        fundoMov1 -= 1
-        fundoMov2 -= 1
-        if fundoMov1 <= -1129:
-            fundoMov1 = 1129
-        elif fundoMov2 <= -1129:
-            fundoMov2 = 1129
+        tela.blit(fundo, (0, 0))
+
+        # Objetos decorativos — teleportam a cada 2 segundos
+        agora = pygame.time.get_ticks()
+        if agora - obj_ultimo_teleporte >= OBJ_INTERVALO:
+            obj_x = random.randint(300, 900)
+            obj_y = random.randint(500, 620)
+            obj_ultimo_teleporte = agora
+        if agora - obj2_ultimo_teleporte >= OBJ_INTERVALO:
+            obj2_x = random.randint(300, 900)
+            obj2_y = random.randint(500, 620)
+            obj2_ultimo_teleporte = agora
+        if agora - obj3_ultimo_teleporte >= OBJ_INTERVALO:
+            obj3_x = random.randint(300, 900)
+            obj3_y = random.randint(500, 620)
+            obj3_ultimo_teleporte = agora
+        if agora - obj4_ultimo_teleporte >= OBJ_INTERVALO:
+            obj4_x = random.randint(300, 900)
+            obj4_y = random.randint(500, 620)
+            obj4_ultimo_teleporte = agora
+        tela.blit(enderman, (obj_x,  obj_y))
+        tela.blit(enderman, (obj2_x, obj2_y))
+        tela.blit(enderman, (obj3_x, obj3_y))
+        tela.blit(enderman, (obj4_x, obj4_y))
 
         tela.blit(iron, (posicaoXPersona, posicaoYPersona))
         tela.blit(missel, (posicaoXMissel, posicaoYMissel))
@@ -190,13 +229,13 @@ def jogar():
         texto = fonteMenu.render("Pontos: " + str(pontos), True, branco)
         tela.blit(texto, (700, 15))
 
-        # Dica de pausa discreta
+        # Dica de pausa discreta (item 12)
         dica_pausa = fonteMenu.render("Press Space to Pause Game", True, (200, 200, 200))
         tela.blit(dica_pausa, (10, 670))
 
-        # Item 16: sol pulsante no canto superior direito
-        _sol_tick += _SOL_VELOCIDADE
-        desenhar_sol(tela, _sol_tick)
+        # Sol pulsante
+        _sol_frame = (_sol_frame + 1) % _N
+        desenhar_sol(tela, _sol_frame)
 
         pixelsPersonaX = list(range(posicaoXPersona, posicaoXPersona + 210))
         pixelsPersonaY = list(range(posicaoYPersona, posicaoYPersona + 120))
@@ -217,14 +256,11 @@ def jogar():
 
 
 def dead(pontos_jogador):
-    global _sol_tick
+    global _sol_frame
     pygame.mixer.music.stop()
     pygame.mixer.Sound.play(explosaoSound)
+    falar("Game Over")
 
-    # Item 19: fala a pontuação ao morrer
-    falar(f"Game over! Você fez {pontos_jogador} pontos.")
-
-    # Busca o maior pontuador atualizado
     nome_top, pts_top, data_top = maior_pontuador()
 
     larguraButtonStart = 150
@@ -233,11 +269,8 @@ def dead(pontos_jogador):
     while True:
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
-                pygame.quit()
                 quit()
-            # Item 20: ESC fecha o jogo completamente
             elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
-                pygame.quit()
                 quit()
             elif evento.type == pygame.MOUSEBUTTONDOWN:
                 if startButton.collidepoint(evento.pos):
@@ -252,46 +285,39 @@ def dead(pontos_jogador):
         tela.fill(branco)
         tela.blit(fundoDead, (0, 0))
 
-        # Botão reiniciar
         startButton = pygame.draw.rect(tela, branco, (10, 10, larguraButtonStart, alturaButtonStart), border_radius=15)
         startTexto = fonteMenu.render("Iniciar Game", True, preto)
         tela.blit(startTexto, (25, 20))
 
-        # Sua pontuação
-        txt_pontos = fonteGrande.render(f"Sua pontuação: {pontos_jogador}", True, branco)
+        # Sua pontuacao (canto superior direito)
+        txt_pontos = fonteGrande.render(f"Sua pontuacao: {pontos_jogador}", True, branco)
         rect_pontos = txt_pontos.get_rect(topright=(990, 45))
         tela.blit(txt_pontos, rect_pontos)
 
-        # Maior pontuador
+        # Maior pontuador (canto superior direito, item 18)
         if nome_top:
             txt_top = fonteGrande.render(f"Recorde: {nome_top} - {pts_top} pts - {data_top}", True, amarelo)
             rect_top = txt_top.get_rect(topright=(990, 15))
             tela.blit(txt_top, rect_top)
 
-        # Item 16: sol pulsante na tela de morte também
-        _sol_tick += _SOL_VELOCIDADE
-        desenhar_sol(tela, _sol_tick)
+        # Sol pulsante
+        _sol_frame = (_sol_frame + 1) % _N
+        desenhar_sol(tela, _sol_frame)
 
         pygame.display.update()
         relogio.tick(60)
 
 
 def boasVindas():
-    global _sol_tick
+    global _sol_frame
     larguraBtn = 200
     alturaBtn = 50
-
-    # Item 19: fala boas-vindas ao jogador ao entrar na tela inicial
-    falar(f"Bem-vindo, {nome}! Prepare-se para jogar.")
 
     while True:
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
-                pygame.quit()
                 quit()
-            # Item 20: ESC fecha o jogo completamente
             elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
-                pygame.quit()
                 quit()
             elif evento.type == pygame.MOUSEBUTTONDOWN:
                 if btnIniciar.collidepoint(evento.pos):
@@ -304,24 +330,21 @@ def boasVindas():
         tela.fill(preto)
         tela.blit(fundoStart, (0, 0))
 
-        # Sobreposição escura para legibilidade
         overlay = pygame.Surface((1000, 700), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 150))
         tela.blit(overlay, (0, 0))
 
-        # Nome do jogador
-        txt_bemvindo = fontePausa.render(f"Olá, {nome}!", True, amarelo)
+        txt_bemvindo = fontePausa.render(f"Ola, {nome}!", True, amarelo)
         rect_bv = txt_bemvindo.get_rect(center=(500, 120))
         tela.blit(txt_bemvindo, rect_bv)
 
-        # Mecânica do jogo
         mecanica = [
             "Como jogar:",
-            "  • Use W e S para mover o personagem para CIMA e BAIXO",
-            "  • Desvie do bafo do dragão para marcar pontos",
-            "  • Cada desvio vale 1 ponto — quanto mais esquiva, mais rápido fica!",
-            "  • Pressione ESPAÇO para pausar o jogo",
-            "  • Pressione ESC para sair a qualquer momento",
+            "  * Use W e S para mover o personagem CIMA e BAIXO",
+            "  * Desvie do bafo do dragao para marcar pontos",
+            "  * Cada desvio vale 1 ponto - quanto mais esquiva, mais rapido fica!",
+            "  * Pressione ESPACO para pausar o jogo",
+            "  * Pressione ESC para sair a qualquer momento",
         ]
         y_mec = 220
         for linha in mecanica:
@@ -329,27 +352,23 @@ def boasVindas():
             tela.blit(surf, (100, y_mec))
             y_mec += 36
 
-        # Maior pontuador
         if nome_maior:
             txt_recorde = fonteGrande.render(
-                f"Recorde atual: {nome_maior} — {maior_pontos} pts — {dataJogada}", True, amarelo
+                f"Recorde atual: {nome_maior} - {maior_pontos} pts - {dataJogada}", True, amarelo
             )
-            rect_rec = txt_recorde.get_rect(center=(500, 530))
-            tela.blit(txt_recorde, rect_rec)
         else:
             txt_recorde = fonteGrande.render("Nenhum recorde ainda. Seja o primeiro!", True, amarelo)
-            rect_rec = txt_recorde.get_rect(center=(500, 530))
-            tela.blit(txt_recorde, rect_rec)
+        rect_rec = txt_recorde.get_rect(center=(500, 530))
+        tela.blit(txt_recorde, rect_rec)
 
-        # Botão iniciar
         btnIniciar = pygame.draw.rect(tela, branco, (400, 590, larguraBtn, alturaBtn), border_radius=20)
         txt_btn = fonteGrande.render("INICIAR PARTIDA", True, preto)
         rect_btn = txt_btn.get_rect(center=btnIniciar.center)
         tela.blit(txt_btn, rect_btn)
 
-        # Item 16: sol pulsante no canto superior direito da tela de boas-vindas
-        _sol_tick += _SOL_VELOCIDADE
-        desenhar_sol(tela, _sol_tick)
+        # Sol pulsante
+        _sol_frame = (_sol_frame + 1) % _N
+        desenhar_sol(tela, _sol_frame)
 
         pygame.display.update()
         relogio.tick(60)
