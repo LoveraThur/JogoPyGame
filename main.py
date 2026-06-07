@@ -4,7 +4,6 @@ import math
 import threading
 from recursos.funcoes import inicializarBancoDeDados, limpar_tela, escreverDados, maior_pontuador
 
-# Item 19: pyttsx3 para narração de voz
 try:
     import pyttsx3
     _tts_engine = pyttsx3.init()
@@ -44,7 +43,7 @@ while True:
 
 tamanho = (1000, 700)
 pygame.display.set_caption("Iron Man do Marcão")
-icone = pygame.image.load("bases/icone.png")
+icone = pygame.image.load("bases/bafoDragao.png")
 pygame.display.set_icon(icone)
 relogio = pygame.time.Clock()
 tela = pygame.display.set_mode(tamanho)
@@ -64,7 +63,7 @@ missel = pygame.image.load("bases/bafoDragao.png")
 missel = pygame.transform.scale(missel, (80, 80))
 missileSound = pygame.mixer.Sound("bases/missile.wav")
 explosaoSound = pygame.mixer.Sound("bases/explosao.wav")
-pygame.mixer.music.load("bases/ironsound.mp3")
+pygame.mixer.music.load("bases/musicend.mp3")
 fonteMenu = pygame.font.SysFont("comicsans", 18)
 fontePausa = pygame.font.SysFont("comicsans", 72, bold=True)
 fonteGrande = pygame.font.SysFont("comicsans", 24, bold=True)
