@@ -1,5 +1,6 @@
 import pygame
 import random
+import json
 from recursos.funcoes import inicializarBancoDeDados, limpar_tela, escreverDados, maior_pontuador
 
 import pyttsx3
@@ -24,7 +25,7 @@ while True:
         print("Nome Invalido!")
 
 tamanho = (1000, 700)
-pygame.display.set_caption("Iron Man do Marcao")
+pygame.display.set_caption("End Minecraft")
 icone = pygame.image.load("bases/bafoDragao.png")
 pygame.display.set_icon(icone)
 relogio = pygame.time.Clock()
@@ -214,44 +215,81 @@ def jogar():
 def dead(pontos_jogador):
     pygame.mixer.music.stop()
     pygame.mixer.Sound.play(explosaoSound)
-    falar("Game Over")
+    pygame.time.wait(800)
+    pygame.mixer.stop()
+    pygame.mixer.quit()
+    pygame.mixer.init()
+    pygame.mixer.music.load("bases/musicend.mp3")
 
     nome_top, pts_top, data_top = maior_pontuador()
 
-    larguraButtonStart = 150
-    alturaButtonStart = 40
+    startButton   = pygame.Rect(364, 285, 281, 40)
+    recordeButton = pygame.Rect(364, 325, 281, 40)
+    ver_recordes  = False
 
     while True:
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 quit()
             elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
-                quit()
-            elif evento.type == pygame.MOUSEBUTTONDOWN:
-                if startButton.collidepoint(evento.pos):
-                    larguraButtonStart = 140
-                    alturaButtonStart = 35
+                if ver_recordes:
+                    ver_recordes = False
+                else:
+                    quit()
             elif evento.type == pygame.MOUSEBUTTONUP:
-                if startButton.collidepoint(evento.pos):
-                    larguraButtonStart = 150
-                    alturaButtonStart = 40
-                    jogar()
+                if not ver_recordes:
+                    if startButton.collidepoint(evento.pos):
+                        jogar()
+                    elif recordeButton.collidepoint(evento.pos):
+                        ver_recordes = True
+                else:
+                    ver_recordes = False
 
         tela.fill(branco)
         tela.blit(fundoDead, (0, 0))
 
-        startButton = pygame.draw.rect(tela, branco, (10, 10, larguraButtonStart, alturaButtonStart), border_radius=15)
-        startTexto = fonteMenu.render("Iniciar Game", True, preto)
-        tela.blit(startTexto, (25, 20))
+        if ver_recordes:
+            # Tela de recordes
+            overlay = pygame.Surface((1000, 700), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 180))
+            tela.blit(overlay, (0, 0))
+            titulo = fontePausa.render("Recordes", True, amarelo)
+            tela.blit(titulo, titulo.get_rect(center=(500, 80)))
+            from recursos.funcoes import maior_pontuador as mp
+            banco = open("log.dat", "r")
+            dados = banco.read()
+            banco.close()
+            dadosDict = json.loads(dados) if dados != "" else {}
+            lista = sorted(dadosDict.items(), key=lambda x: x[1][0], reverse=True)
+            y_rec = 160
+            for i, (n, info) in enumerate(lista[:10]):
+                cor = amarelo if i == 0 else branco
+                linha = fonteGrande.render(f"{i+1}. {n}  —  {info[0]} pts  —  {info[1]}", True, cor)
+                tela.blit(linha, linha.get_rect(center=(500, y_rec)))
+                y_rec += 40
+            dica = fonteMenu.render("Clique ou ESC para voltar", True, (200, 200, 200))
+            tela.blit(dica, dica.get_rect(center=(500, 650)))
+        else:
+            pygame.draw.rect(tela, (80, 80, 80), (364, 285, 281, 40), border_radius=15)
+            startButton = pygame.draw.rect(tela, branco, (364, 285, 281, 40), border_radius=15, width=2)
+            startTexto = fonteMenu.render("Respawn", True, branco)
+            rect_start = startTexto.get_rect(center=(500, 305))
+            tela.blit(startTexto, rect_start)
 
-        txt_pontos = fonteGrande.render(f"Sua pontuacao: {pontos_jogador}", True, branco)
-        rect_pontos = txt_pontos.get_rect(topright=(990, 45))
-        tela.blit(txt_pontos, rect_pontos)
+            pygame.draw.rect(tela, (80, 80, 80), (364, 325, 281, 40), border_radius=15)
+            recordeButton = pygame.draw.rect(tela, branco, (364, 325, 281, 40), border_radius=15, width=2)
+            recTexto = fonteMenu.render("Ver Recordes", True, branco)
+            rect_rec = recTexto.get_rect(center=(500, 345))
+            tela.blit(recTexto, rect_rec)
 
-        if nome_top:
-            txt_top = fonteGrande.render(f"Recorde: {nome_top} - {pts_top} pts - {data_top}", True, amarelo)
-            rect_top = txt_top.get_rect(topright=(990, 15))
-            tela.blit(txt_top, rect_top)
+            txt_pontos = fonteGrande.render(f"Sua pontuacao: {pontos_jogador}", True, branco)
+            rect_pontos = txt_pontos.get_rect(topright=(990, 45))
+            tela.blit(txt_pontos, rect_pontos)
+
+            if nome_top:
+                txt_top = fonteGrande.render(f"Recorde: {nome_top} - {pts_top} pts - {data_top}", True, amarelo)
+                rect_top = txt_top.get_rect(topright=(990, 15))
+                tela.blit(txt_top, rect_top)
 
         pygame.display.update()
         relogio.tick(60)

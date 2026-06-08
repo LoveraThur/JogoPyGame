@@ -3,15 +3,15 @@ import cx_Freeze
 executaveis = [ 
                cx_Freeze.Executable(
                    script="main.py", 
-                   icon="assets/icone.ico",
-                    target_name="IronManMarcao.exe"
+                   icon="bases/icone.ico",
+                    target_name="MinecraftEnd.exe"
                    ) ]
 cx_Freeze.setup(
-    name = "Iron Man",
+    name = "End Minecraft",
     options={
         "build_exe":{
-            "packages":["pygame"],
-            "include_files":["assets","recursos"]
+            "packages":["pygame", "pyttsx3"],
+            "include_files":["bases","recursos"]
         }
     }, executables = executaveis
 )
