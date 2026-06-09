@@ -1,9 +1,8 @@
-# pip install cx_freeze
 import cx_Freeze
 executaveis = [ 
                cx_Freeze.Executable(
                    script="main.py", 
-                   icon="bases/icone.ico",
+                   icon="bases/icon.ico",
                     target_name="MinecraftEnd.exe"
                    ) ]
 cx_Freeze.setup(
@@ -15,6 +14,3 @@ cx_Freeze.setup(
         }
     }, executables = executaveis
 )
-
-# python setup.py build
-# python setup.py bdist_msi

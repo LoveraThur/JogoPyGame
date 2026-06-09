@@ -5,7 +5,6 @@
     Arthur Albara Lovera - RA: 1139243
     Arthur Tapparo Silvani - RA: 1139247 
 
-
 ##  História do Jogo
 
 
@@ -17,7 +16,7 @@ Um jogo perfeito para quem ama ação rápida, desafios progressivos e o icônic
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## Tecnologias Utilizadas
 
 O projeto foi desenvolvido utilizando as seguintes tecnologias e bibliotecas:
 

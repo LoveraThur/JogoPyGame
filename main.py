@@ -54,16 +54,14 @@ fonteMenu = pygame.font.SysFont("comicsans", 18)
 fontePausa = pygame.font.SysFont("comicsans", 72, bold=True)
 fonteGrande = pygame.font.SysFont("comicsans", 24, bold=True)
 
-# Lua vibrante — posicao base no canto superior direito
 _LUA_X_BASE = 950
 _LUA_Y_BASE = 50
 _LUA_RAIO = 35
-_VIBRA_AMPLI = 3        # amplitude da vibracao em pixels
-_VIBRA_SPEED = 4        # frames por passo de vibracao
+_VIBRA_AMPLI = 3        
+_VIBRA_SPEED = 4        
 
 
 def desenhar_lua(superficie):
-    """Desenha uma lua crescente que vibra levemente usando o tempo atual."""
     passo = (pygame.time.get_ticks() // (1000 // _VIBRA_SPEED * 10)) % 4
     if passo == 0:
         ox, oy = 0, 0
@@ -96,7 +94,6 @@ def jogar():
     pygame.mixer.music.play(-1)
     dificuldade = 20
 
-    # Objetos decorativos (4 endermen) — cada um teleporta a cada 2 segundos
     obj_x  = random.randint(300, 900)
     obj_y  = random.randint(500, 620)
     obj2_x = random.randint(300, 900)
@@ -159,7 +156,6 @@ def jogar():
         tela.fill(branco)
         tela.blit(fundo, (0, 0))
 
-        # Endermen teleportam a cada 2 segundos
         agora = pygame.time.get_ticks()
         if agora - obj_ultimo_teleporte >= OBJ_INTERVALO:
             obj_x = random.randint(0, 900)
@@ -191,7 +187,6 @@ def jogar():
         dica_pausa = fonteMenu.render("Press Space to Pause Game", True, (200, 200, 200))
         tela.blit(dica_pausa, (10, 670))
 
-        # Lua vibrante
         desenhar_lua(tela)
 
         pixelsPersonaX = list(range(posicaoXPersona, posicaoXPersona + 210))
@@ -249,7 +244,6 @@ def dead(pontos_jogador):
         tela.blit(fundoDead, (0, 0))
 
         if ver_recordes:
-            # Tela de recordes
             overlay = pygame.Surface((1000, 700), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 180))
             tela.blit(overlay, (0, 0))

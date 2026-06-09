@@ -1,0 +1,6 @@
+README.md
+setup.py
+End_Minecraft.egg-info/PKG-INFO
+End_Minecraft.egg-info/SOURCES.txt
+End_Minecraft.egg-info/dependency_links.txt
+End_Minecraft.egg-info/top_level.txt
